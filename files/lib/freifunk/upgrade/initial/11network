@@ -26,7 +26,8 @@ set network.freifunk='interface'
 EOF
 
 case "$board" in
-    bullet-m)
+    bullet-m|\
+    tl-mr3020)
         uci set network.freifunk.ifname="bat0"
         uci set network.wan.ifname="$lan_ifname"
         ;;
