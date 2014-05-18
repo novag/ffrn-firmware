@@ -1,0 +1,8 @@
+#!/bin/sh
+
+KEY=`fastd --generate-key --machine-readable`
+uci -q batch <<EOF
+    set fastd.mesh_vpn.enabled=1
+    set fastd.mesh_vpn.secret="$KEY"
+EOF
+uci commit fastd
