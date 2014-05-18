@@ -4,6 +4,7 @@ src-git routing https://github.com/libre-mesh/openwrt-routing-packages.git
 src-git telephony http://feeds.openwrt.nanl.de/openwrt/telephony.git
 #src-svn xwrt http://x-wrt.googlecode.com/svn/trunk/package
 src-git fastd git://git.metameute.de/lff/pkg_fastd
+src-git ffrn_node_info git://code.benoswald.de/ffrn-node-info.git
 #src-svn phone svn://svn.openwrt.org/openwrt/feeds/phone
 #src-svn efl svn://svn.openwrt.org/openwrt/feeds/efl
 #src-svn xorg svn://svn.openwrt.org/openwrt/feeds/xorg
