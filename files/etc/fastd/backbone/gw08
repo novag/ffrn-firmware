@@ -1,3 +1,3 @@
 key "81813900a53dc6483114e804de8b463799da4cda52393eb454a8d15cdacbf289";
-remote gw08.freifunk-rhein-neckar.de:10000;
+remote ipv4 "gw08.freifunk-rhein-neckar.de" port 10000;
 

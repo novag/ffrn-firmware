@@ -1,3 +1,3 @@
 key "313f8733fdb3de152c6dfe520a3c70d6cf37a94c7727a7530e6a491ac3920a59";
-remote gw05.freifunk-rhein-neckar.de:10000;
+remote ipv4 "gw05.freifunk-rhein-neckar.de" port 10000;
 
