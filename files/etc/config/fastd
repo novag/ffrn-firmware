@@ -1,0 +1,16 @@
+package fastd
+
+config fastd mesh_vpn
+
+    option enabled 1
+
+    list config '/etc/fastd/fastd.conf'
+
+    option syslog_level 'info'
+
+    list method 'null'
+    option mode 'tap'
+    option interface 'mesh-vpn'
+    option mtu '1350'
+
+    option secret 'generate'
