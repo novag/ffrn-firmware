@@ -1,14 +1,21 @@
+#
+# Copyright (C) 2014 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fstools
-PKG_VERSION:=2014-04-07
+PKG_VERSION:=2014-06-02
 
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git://nbd.name/fstools.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=a1f48fc0444f5c3c44ee6ef1005cd8da65decefd
+PKG_SOURCE_VERSION:=d04e58946eff771bf59db90d7a2301b746141ac4
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 CMAKE_INSTALL:=1
 
@@ -69,6 +76,13 @@ define Package/block-mount/install
 	ln -s /sbin/block $(1)/usr/sbin/swapon
 	ln -s /sbin/block $(1)/usr/sbin/swapoff
 
+endef
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libubi-utils.a $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,fstools))

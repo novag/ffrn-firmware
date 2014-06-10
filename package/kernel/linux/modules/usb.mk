@@ -102,6 +102,7 @@ $(eval $(call KernelPackage,usb-musb-tusb6010))
 define KernelPackage/usb-phy-nop
   TITLE:=Support for USB NOP transceiver
   KCONFIG:=CONFIG_NOP_USB_XCEIV
+  HIDDEN:=1
 ifneq ($(wildcard $(LINUX_DIR)/drivers/usb/phy/phy-generic.ko),)
   FILES:=$(LINUX_DIR)/drivers/usb/phy/phy-generic.ko
   AUTOLOAD:=$(call AutoLoad,43,phy-generic)
@@ -167,7 +168,7 @@ $(eval $(call KernelPackage,usb-phy-omap-usb2))
 define KernelPackage/usb-phy-omap-usb3
   TITLE:=Support for OMAP USB3 PHY
   KCONFIG:=CONFIG_OMAP_USB3
-  DEPENDS:=@TARGET_omap
+  DEPENDS:=@TARGET_omap +kmod-usb-phy-omap-usb2
   FILES:=$(LINUX_DIR)/drivers/usb/phy/phy-omap-usb3.ko
   AUTOLOAD:=$(call AutoLoad,45,phy-omap-usb3)
   $(call AddDepends/usb)
@@ -275,6 +276,32 @@ endef
 $(eval $(call KernelPackage,usb-eth-gadget))
 
 
+define KernelPackage/usb-serial-gadget
+  TITLE:=USB Serial Gadget support
+  KCONFIG:=CONFIG_USB_G_SERIAL
+  DEPENDS:=+kmod-usb-gadget +(!LINUX_3_3&&!LINUX_3_6):kmod-usb-lib-composite
+ifneq ($(wildcard $(LINUX_DIR)/drivers/usb/gadget/u_serial.ko),)
+  FILES:= \
+	$(LINUX_DIR)/drivers/usb/gadget/u_serial.ko \
+	$(LINUX_DIR)/drivers/usb/gadget/usb_f_acm.ko \
+	$(LINUX_DIR)/drivers/usb/gadget/usb_f_obex.ko \
+	$(LINUX_DIR)/drivers/usb/gadget/usb_f_serial.ko \
+	$(LINUX_DIR)/drivers/usb/gadget/g_serial.ko
+  AUTOLOAD:=$(call AutoLoad,52,usb_f_acm g_serial)
+else
+  FILES:=$(LINUX_DIR)/drivers/usb/gadget/g_serial.ko
+  AUTOLOAD:=$(call AutoLoad,52,g_serial)
+endif
+  $(call AddDepends/usb)
+endef
+
+define KernelPackage/usb-serial-gadget/description
+  Kernel support for USB Serial Gadget.
+endef
+
+$(eval $(call KernelPackage,usb-serial-gadget))
+
+
 define KernelPackage/usb-uhci
   TITLE:=Support for UHCI controllers
   KCONFIG:= \
@@ -335,7 +362,7 @@ $(eval $(call KernelPackage,usb2-fsl))
 
 define KernelPackage/usb2-omap
   TITLE:=Support for USB2 for OMAP
-  DEPENDS:=@TARGET_omap +kmod-usb-phy-nop +kmod-usb-phy-am335x
+  DEPENDS:=@TARGET_omap +kmod-usb-phy-nop +kmod-usb-phy-am335x +kmod-usb2
   KCONFIG:=CONFIG_USB_EHCI_HCD_OMAP
   FILES:=$(LINUX_DIR)/drivers/usb/host/ehci-omap.ko
   AUTOLOAD:=$(call AutoLoad,39,ehci-omap)
@@ -353,8 +380,7 @@ define KernelPackage/usb2
   TITLE:=Support for USB2 controllers
   DEPENDS:=\
 	+TARGET_brcm47xx:kmod-usb-brcm47xx \
-	+TARGET_mpc85xx:kmod-usb2-fsl \
-	+TARGET_omap:kmod-usb2-omap
+	+TARGET_mpc85xx:kmod-usb2-fsl
   KCONFIG:=\
 	CONFIG_USB_EHCI_HCD \
 	CONFIG_USB_EHCI_ATH79=y \
@@ -1089,6 +1115,38 @@ endef
 $(eval $(call KernelPackage,usb-net-cdc-ether))
 
 
+define KernelPackage/usb-net-cdc-eem
+  TITLE:=Support for CDC EEM connections
+  KCONFIG:=CONFIG_USB_NET_CDC_EEM
+  FILES:=$(LINUX_DIR)/drivers/$(USBNET_DIR)/cdc_eem.ko
+  AUTOLOAD:=$(call AutoProbe,cdc_eem)
+  $(call AddDepends/usb-net)
+endef
+
+define KernelPackage/usb-net-cdc-eem/description
+ Kernel support for USB CDC EEM
+endef
+
+$(eval $(call KernelPackage,usb-net-cdc-eem))
+
+
+define KernelPackage/usb-net-cdc-subset
+  TITLE:=Support for CDC Ethernet subset connections
+  KCONFIG:= \
+	CONFIG_USB_NET_CDC_SUBSET \
+	CONFIG_USB_ARMLINUX
+  FILES:=$(LINUX_DIR)/drivers/$(USBNET_DIR)/cdc_subset.ko
+  AUTOLOAD:=$(call AutoProbe,cdc_subset)
+  $(call AddDepends/usb-net)
+endef
+
+define KernelPackage/usb-net-cdc-subset/description
+ Kernel support for Simple USB Network Links (CDC Ethernet subset)
+endef
+
+$(eval $(call KernelPackage,usb-net-cdc-subset))
+
+
 define KernelPackage/usb-net-qmi-wwan
   TITLE:=QMI WWAN driver
   KCONFIG:=CONFIG_USB_NET_QMI_WWAN
@@ -1202,7 +1260,7 @@ define KernelPackage/usb-hid
   FILES:=$(LINUX_DIR)/drivers/$(USBHID_DIR)/usbhid.ko
   AUTOLOAD:=$(call AutoProbe,usbhid)
   $(call AddDepends/usb)
-  $(call AddDepends/hid)
+  $(call AddDepends/hid,+kmod-hid-generic)
   $(call AddDepends/input,+kmod-input-evdev)
 endef
 
@@ -1304,7 +1362,7 @@ define KernelPackage/usb-chipidea
   KCONFIG:=\
 	CONFIG_USB_CHIPIDEA \
 	CONFIG_USB_CHIPIDEA_HOST=y \
-	CONFIG_USB_CHIPIDEA_UDC=n \
+	CONFIG_USB_CHIPIDEA_UDC=y \
 	CONFIG_USB_CHIPIDEA_DEBUG=y
 ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),lt,3.11.0)),1)
   FILES:=\
@@ -1315,6 +1373,7 @@ ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),lt,3.11.0)),1)
 else
   FILES:=\
 	$(LINUX_DIR)/drivers/usb/chipidea/ci_hdrc.ko \
+	$(if $(CONFIG_USB_GADGET),$(LINUX_DIR)/drivers/usb/gadget/udc-core.ko) \
 	$(if $(CONFIG_OF),$(LINUX_DIR)/drivers/usb/chipidea/ci_hdrc_imx.ko) \
 	$(if $(CONFIG_OF),$(LINUX_DIR)/drivers/usb/chipidea/usbmisc_imx.ko)
   AUTOLOAD:=$(call AutoLoad,51,ci_hdrc $(if $(CONFIG_OF),ci_hdrc_imx usbmisc_imx),1)
@@ -1331,7 +1390,7 @@ $(eval $(call KernelPackage,usb-chipidea,1))
 
 define KernelPackage/usb-mxs-phy
   TITLE:=Support for Freescale MXS USB PHY
-  DEPENDS:=@TARGET_imx6
+  DEPENDS:=@TARGET_imx6||TARGET_mxs +TARGET_mxs:kmod-usb-chipidea-imx
   KCONFIG:=CONFIG_USB_MXS_PHY
   FILES:=\
 	$(LINUX_DIR)/drivers/usb/phy/phy-mxs-usb.ko

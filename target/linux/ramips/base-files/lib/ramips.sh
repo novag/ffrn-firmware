@@ -13,6 +13,9 @@ ramips_board_detect() {
 	machine=$(awk 'BEGIN{FS="[ \t]+:[ \t]"} /machine/ {print $2}' /proc/cpuinfo)
 
 	case "$machine" in
+	*"7Links PX-4885")
+		name="px4885"
+		;;
 	*"8devices Carambola")
 		name="carambola"
 		;;
@@ -21,6 +24,9 @@ ramips_board_detect() {
 		;;
 	*"Edimax 3g-6200nl")
 		name="3g-6200nl"
+		;;
+	*"Airlink101 AR725W")
+		name="ar725w"
 		;;
 	*"AirLive Air3GII")
 		name="air3gii"
@@ -63,6 +69,9 @@ ramips_board_detect() {
 		;;
 	*"Aztech HW550-3G")
 		name="hw550-3g"
+		;;
+	*"CY-SWR1100")
+		name="cy-swr1100"
 		;;
 	*"DCS-930")
 		name="dcs-930"
@@ -204,6 +213,9 @@ ramips_board_detect() {
 		;;
 	*"RT-N56U")
 		name="rt-n56u"
+		;;
+	*"RUT5XX")
+		name="rut5xx"
 		;;
 	*"Skyline SL-R7205"*)
 		name="sl-r7205"

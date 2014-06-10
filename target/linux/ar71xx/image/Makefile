@@ -13,6 +13,8 @@ JFFS2_BLOCKSIZE = 64k 128k 256k
 
 rootfs_type=$(patsubst jffs2-%,jffs2,$(patsubst squashfs-%,squashfs,$(1)))
 
+# $(1): rootfs type.
+# $(2): board name.
 define imgname
 $(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(call rootfs_type,$(1))
 endef
@@ -41,13 +43,23 @@ endef
 
 SINGLE_PROFILES:=
 
+# $(1)      : name of image build method to be used, e.g., TPLINK-LZMA, AthLzma.
+# $(2)      : name of the build template to be used, e.g. 64k, 64kraw, 128k, etc.
+# $(3)      : name of the profile to be defined.
+# $(4)      : board name.
+# $(5)~$(7) : arguments for $(mkcmdline)
+#		board=$(1) console=$(2),$(3)
+# $(8)~$(14): extra arguments.
 define SingleProfile
+  # $(1): action name, e.g. loader, buildkernel, squashfs, etc.
   define Image/Build/Profile/$(3)
-	$$(call Image/Build/Template/$(2)/$$(1),$(1),$(4),$$(call mkcmdline,$(5),$(6),$(7)),$(8),$(9),$(10),$(11),$(12))
+	$$(call Image/Build/Template/$(2)/$$(1),$(1),$(4),$$(call mkcmdline,$(5),$(6),$(7)),$(8),$(9),$(10),$(11),$(12),$(13),$(14))
   endef
   SINGLE_PROFILES += $(3)
 endef
 
+# $(1), name of the MultiProfile to be added.
+# $(2), name of Profiles to be included in the MultiProfile.
 define MultiProfile
   define Image/Build/Profile/$(1)
 	$(foreach p,$(2),
@@ -62,6 +74,9 @@ KDIR_TMP:=$(KDIR)/tmp
 VMLINUX:=$(BIN_DIR)/$(IMG_PREFIX)-vmlinux
 UIMAGE:=$(BIN_DIR)/$(IMG_PREFIX)-uImage
 
+# $(1): input file.
+# $(2): output file.
+# $(3): extra arguments for lzma.
 define CompressLzma
   $(STAGING_DIR_HOST)/bin/lzma e $(1) -lc1 -lp2 -pb2 $(3) $(2)
 endef
@@ -76,6 +91,10 @@ define PatchKernel/initramfs
 	cp $(KDIR_TMP)/vmlinux-initramfs-$(1) $(call imgname,initramfs,$(1)).bin
 endef
 
+# $(1): board name.
+# $(2): kernel command line.
+# $(3): extra argumetns for lzma.
+# $(4): name suffix, e.g. "-initramfs".
 define PatchKernelLzma
 	cp $(KDIR)/vmlinux$(4) $(KDIR_TMP)/vmlinux$(4)-$(1)
 	$(STAGING_DIR_HOST)/bin/patch-cmdline $(KDIR_TMP)/vmlinux$(4)-$(1) "$(strip $(2))"
@@ -89,12 +108,21 @@ define PatchKernelGzip
 endef
 
 ifneq ($(SUBTARGET),mikrotik)
+# $(1): compression method of the data.
+# $(2): extra arguments.
+# $(3): input data file.
+# $(4): output file.
 define MkuImage
 	mkimage -A mips -O linux -T kernel -a 0x80060000 -C $(1) $(2) \
 		-e 0x80060000 -n 'MIPS OpenWrt Linux-$(LINUX_VERSION)' \
 		-d $(3) $(4)
 endef
 
+# $(1): board name.
+# $(2): kernel command line.
+# $(3): extra arguments for lzma.
+# $(4): name suffix, e.g. "-initramfs".
+# $(5): extra arguments for mkimage.
 define MkuImageLzma
 	$(call PatchKernelLzma,$(1),$(2),$(3),$(4))
 	$(call MkuImage,lzma,$(5),$(KDIR_TMP)/vmlinux$(4)-$(1).bin.lzma,$(KDIR_TMP)/vmlinux$(4)-$(1).uImage)
@@ -120,6 +148,15 @@ define MkuImageOKLI
 endef
 endif
 
+# $(1): name of the 1st file.
+# $(2): size limit of the 1st file if it is greater than 262144, or
+#       the erase size of the flash if it is greater than zero and less
+#       than 262144
+# $(3): name of the 2nd file.
+# $(4): size limit of the 2nd file if $(2) is greater than 262144, otherwise
+#       it is the size limit of the output file
+# $(5): name of the output file.
+# $(6): padding size.
 define CatFiles
 	if [ $(2) -eq 0 ]; then \
 		filename="$(3)"; fstype=$$$${filename##*\.}; \
@@ -158,6 +195,11 @@ define CatFiles
 	fi; fi
 endef
 
+# $(1): rootfs type.
+# $(2): board name.
+# $(3): kernel image size limit.
+# $(4): rootfs image size limit.
+# $(5): padding argument for padjffs2.
 Sysupgrade/KR=$(call CatFiles,$(2),$(3),$(KDIR)/root.$(1),$(4),$(call sysupname,$(1),$(5)))
 Sysupgrade/KRuImage=$(call CatFiles,$(KDIR_TMP)/vmlinux-$(2).uImage,$(3),$(KDIR)/root.$(1),$(4),$(call sysupname,$(1),$(2)),$(5))
 Sysupgrade/RKuImage=$(call CatFiles,$(KDIR)/root.$(1),$(4),$(KDIR_TMP)/vmlinux-$(2).uImage,$(3),$(call sysupname,$(1),$(2)))
@@ -227,6 +269,7 @@ ew-dorin_mtdlayout_16M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),16000k(fir
 dlrtdev_mtdlayout=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,6208k(firmware),64k(caldata)ro,640k(certs),960k(unknown)ro,64k@0x7f0000(caldata_copy)
 dlrtdev_mtdlayout_fat=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,7168k(firmware),640k(certs),64k(caldata)ro,64k@0x660000(caldata_orig),6208k@0x50000(firmware_orig)
 dragino2_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,16000k(firmware),64k(config)ro,64k(art)ro
+hiwifi_hc6361_mtdlayout=mtdparts=spi0.0:64k(u-boot)ro,64k(bdinfo)ro,1280k(kernel),14848k(rootfs),64k(backup)ro,64k(art)ro,16128k@0x20000(firmware)
 pb92_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,2752k(rootfs),896k(kernel),64k(nvram),64k(art)ro,3648k@0x50000(firmware)
 planex_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,7744k(firmware),128k(art)ro
 ubntxm_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,7552k(firmware),256k(cfg)ro,64k(EEPROM)ro
@@ -243,6 +286,8 @@ wndr4300_mtdlayout=mtdparts=ar934x-nfc:256k(u-boot)ro,256k(u-boot-env)ro,256k(ca
 zcn1523h_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6208k(rootfs),1472k(kernel),64k(configure)ro,64k(mfg)ro,64k(art)ro,7680k@0x50000(firmware)
 mynet_n600_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,64k(devdata)ro,64k(devconf)ro,15872k(firmware),64k(radiocfg)ro
 mynet_rext_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,7808k(firmware),64k(nvram)ro,64k(ART)ro,6848k@0x130000(filesystem)
+zyx_nbg6716_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(env)ro,64k(RFdata)ro,-(nbu);ar934x-nfc:2048k(zyxel_rfsd),2048k(romd),1024k(header),2048k(kernel),-(ubiroot)
+
 
 define Image/BuildKernel
 	cp $(KDIR)/vmlinux.elf $(VMLINUX).elf
@@ -435,6 +480,21 @@ Image/Build/AthLzma/buildkernel=$(call MkuImageLzma,$(2),$(3) $(4))
 Image/Build/AthLzma=$(call Image/Build/Ath,$(1),$(2),$(3),$(4),$(5),$(6),$(7))
 Image/Build/AthLzma/initramfs=$(call MkuImageLzma/initramfs,$(2),$(3) $(4))
 
+define MkuImageHiWiFi
+	# Field ih_name needs to start with "tw150v1"
+	mkimage -A mips -O linux -T kernel -a 0x80060000 -C $(1) $(2) \
+		-e 0x80060000 -n 'tw150v1 MIPS OpenWrt Linux-$(LINUX_VERSION)' \
+		-d $(3) $(4)
+endef
+
+define MkuImageLzmaHiWiFi
+	$(call PatchKernelLzma,$(1),$(2),$(3),$(4))
+	$(call MkuImageHiWiFi,lzma,$(5),$(KDIR_TMP)/vmlinux$(4)-$(1).bin.lzma,$(KDIR_TMP)/vmlinux$(4)-$(1).uImage)
+endef
+
+Image/Build/HiWiFi/buildkernel=$(call MkuImageLzmaHiWiFi,$(2),$(3) $(4))
+Image/Build/HiWiFi=$(call Image/Build/Ath,$(1),$(2),$(3),$(4),$(5),$(6),$(7))
+Image/Build/HiWiFi/initramfs=$(call MkuImageLzma/initramfs,$(2),$(3) $(4))
 
 Image/Build/PB4X/buildkernel=$(call PatchKernelLzma,$(2),$(3))
 
@@ -801,13 +861,14 @@ endef
 # $(6): Board name (upper caps)
 # $(7): firmware region code (not used yet)
 # $(8): DNI Hardware version
+# $(9): suffix of the configuration file for ubinize
 define Image/Build/NetgearNAND
 	$(eval firmwaresize=$(call mtdpartsize,firmware,$(4)))
 	$(eval kernelsize=$(call mtdpartsize,kernel,$(4)))
 	$(eval imageraw=$(KDIR_TMP)/$(2)-raw.img)
 	$(CP) $(KDIR)/root.squashfs-raw $(KDIR_TMP)/root.squashfs
 	echo -ne '\xde\xad\xc0\xde' > $(KDIR_TMP)/jffs2.eof
-	$(call ubinize,ubinize-$(2).ini,$(KDIR_TMP),$(KDIR_TMP)/$(2)-root.ubi,128KiB,2048,-E 5)
+	$(call ubinize,ubinize-$(9).ini,$(KDIR_TMP),$(KDIR_TMP)/$(2)-root.ubi,128KiB,2048,-E 5)
 	( \
 		dd if=$(KDIR_TMP)/vmlinux-$(2).uImage; \
 		dd if=$(KDIR_TMP)/$(2)-root.ubi \
@@ -836,6 +897,43 @@ ifdef CONFIG_PACKAGE_uboot-ar71xx-nbg460n_550n_550nh
 	fi; fi
   endef
 endif
+
+
+define	Image/Build/ZyXELNAND/buildkernel
+	$(eval kernelsize=$(call mtdpartsize,kernel,$(5)))
+	$(call MkuImageLzma,$(2),$(3) $(5) $(6))
+	mkdir -p $(KDIR_TMP)/$(2)/image/boot
+	cp $(KDIR_TMP)/vmlinux-$(2).uImage $(KDIR_TMP)/$(2)/image/boot/vmlinux.lzma.uImage
+	$(STAGING_DIR_HOST)/bin/mkfs.jffs2 \
+		--pad=$(kernelsize) --big-endian --squash-uids -v -e 128KiB \
+		-o $(KDIR_TMP)/$(2)-kernel.jffs2 \
+		-d $(KDIR_TMP)/$(2)/image \
+		2>&1 1>/dev/null | awk '/^.+$$$$/'
+	-rm -rf $(KDIR_TMP)/$(2)
+endef
+
+define Image/Build/ZyXELNAND
+	if [ "$(1)" != "squashfs" ]; then \
+		echo Only squashfs is supported; \
+		return 0; \
+	fi
+	$(eval firmwaresize=$(call mtdpartsize,firmware,$(4)))
+	$(eval kernelsize=$(call mtdpartsize,kernel,$(4)))
+	$(eval imageraw=$(KDIR_TMP)/$(2)-raw.img)
+	$(CP) $(KDIR)/root.$(1) $(KDIR_TMP)/ubi_root.img
+	echo -ne '\xde\xad\xc0\xde' > $(KDIR_TMP)/jffs2.eof
+	$(call ubinize,ubinize-$(2).ini,$(KDIR_TMP),$(KDIR_TMP)/$(2)-root.ubi,128KiB,2048,-E 5)
+	( \
+		dd if=$(KDIR_TMP)/$(2)-kernel.jffs2; \
+		dd if=$(KDIR_TMP)/$(2)-root.ubi \
+	) > $(imageraw)
+	dd if=$(imageraw) of=$(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(1)-factory.bin \
+		bs=128k conv=sync
+	( \
+		dd if=$(KDIR_TMP)/$(2)-kernel.jffs2; \
+		dd if=$(KDIR)/root.$(1) bs=128k conv=sync \
+	) > $(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(1)-sysupgrade.bin
+endef
 
 
 Image/Build/OpenMesh/buildkernel=$(call MkuImageLzma,$(2))
@@ -871,22 +969,29 @@ endef
 
 define Jffs2Template
   define Image/Build/Template/$(1)/jffs2-$(2)
-    $$(call Image/Build/$$(1),jffs2-$(2),$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8))
+    $$(call Image/Build/$$(1),jffs2-$(2),$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8),$$(9),$$(10))
   endef
 endef
 
+# $(1): template name to be defined.
+# $(2): squashfs suffix to be used.
+# $(3): jffs2 suffix to be used.
 define BuildTemplate
+  # $(1)     : name of build method.
+  # $(2)     : board name.
+  # $(3)     : kernel command line.
+  # $(4)~$(8): extra arguments.
   define Image/Build/Template/$(1)/initramfs
-    $$(call Image/Build/$$(1)/initramfs,initramfs,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8))
+    $$(call Image/Build/$$(1)/initramfs,initramfs,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8),$$(9),$$(10))
   endef
   define Image/Build/Template/$(1)/loader
-    $$(call Image/Build/$$(1)/loader,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8))
+    $$(call Image/Build/$$(1)/loader,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8),$$(9),$$(10))
   endef
   define Image/Build/Template/$(1)/buildkernel
-    $$(call Image/Build/$$(1)/buildkernel,,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8))
+    $$(call Image/Build/$$(1)/buildkernel,,$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8),$$(9),$$(10))
   endef
   define Image/Build/Template/$(1)/squashfs
-    $$(call Image/Build/$$(1),squashfs$(2),$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8))
+    $$(call Image/Build/$$(1),squashfs$(2),$$(2),$$(3),$$(4),$$(5),$$(6),$$(7),$$(8),$$(9),$$(10))
   endef
   $(if $(3),$(foreach bs,$(3),$(eval $(call Jffs2Template,$(1),$(bs)))))
 endef
@@ -936,6 +1041,7 @@ $(eval $(call SingleProfile,CameoAP91,64kraw,DIR600A1,dir-600-a1,DIR-600-A1,ttyS
 $(eval $(call SingleProfile,CameoAP91,64kraw,DIR601A1,dir-601-a1,DIR-600-A1,ttyS0,115200,"AP91-AR7240-RT-090223-02"))
 $(eval $(call SingleProfile,CameoAP91,64kraw,FR54RTR,fr-54rtr,DIR-600-A1,ttyS0,115200,"AP91-AR7240-RT-090223-01"))
 
+$(eval $(call SingleProfile,CameoAP99,64kraw,DIR615E1,dir-615-e1,DIR-615-E1,ttyS0,115200,"AP93-AR7240-RT-081028-00"))
 $(eval $(call SingleProfile,CameoAP99,64kraw,DIR615E4,dir-615-e4,DIR-615-E4,ttyS0,115200,"AP99-AR7240-RT-091105-05"))
 
 $(eval $(call SingleProfile,CameoAP81,64kraw-nojffs,A02RBW300N,a02-rb-w300n,TEW-632BRP,ttyS0,115200,"AP81-AR9130-RT-070614-03"))
@@ -960,6 +1066,8 @@ $(eval $(call SingleProfile,CyberTANLZMA,64k,MYNETREXT,mynet-rext,MYNET-REXT,tty
 $(eval $(call SingleProfile,CameoAP94,64kraw,DIR825B1,dir-825-b1,DIR-825-B1,ttyS0,115200,$$(cameo_ap94_mtdlayout),$$(cameo_ap94_mtdlayout_fat),01AP94-AR7161-RT-080619-00,00AP94-AR7161-RT-080619-00))
 $(eval $(call SingleProfile,CameoAP94,64kraw,TEW673GRU,tew-673gru,TEW-673GRU,ttyS0,115200,$$(cameo_ap94_mtdlayout),$$(cameo_ap94_mtdlayout_fat),01AP94-AR7161-RT-080619-01,00AP94-AR7161-RT-080619-01))
 $(eval $(call SingleProfile,CameoAP94,64kraw,DLRTDEV01,dlrtdev01,DIR-825-B1,ttyS0,115200,$$(dlrtdev_mtdlayout),$$(dlrtdev_mtdlayout_fat),01AP94-AR7161-RT-080619-00,00AP94-AR7161-RT-080619-00))
+
+$(eval $(call SingleProfile,HiWiFi,64k,HIWIFI_HC6361,hiwifi-hc6361,HiWiFi-HC6361,ttyATH0,115200,$$(hiwifi_hc6361_mtdlayout),KRuImage))
 
 $(eval $(call SingleProfile,MyLoader,64k,WP543_2M,wp543,,ttyS0,115200,0x200000,2M))
 $(eval $(call SingleProfile,MyLoader,64k,WP543_4M,wp543,,ttyS0,115200,0x400000,4M))
@@ -1002,6 +1110,7 @@ $(eval $(call SingleProfile,TPLINK,64kraw,RNXN360RT,rnx-n360rt,TL-WR941ND,ttyS0,
 $(eval $(call SingleProfile,TPLINK,64kraw,TLMR3220V1,tl-mr3220-v1,TL-MR3220,ttyS0,115200,0x32200001,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLMR3420V1,tl-mr3420-v1,TL-MR3420,ttyS0,115200,0x34200001,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWA701,tl-wa701n-v1,TL-WA901ND,ttyS0,115200,0x07010001,1,4M))
+$(eval $(call SingleProfile,TPLINK,64kraw,TLWA730REV1,tl-wa730rev1,TL-WA901ND,ttyS0,115200,0x07300001,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWA7510NV1,tl-wa7510n,TL-WA7510N,ttyS0,115200,0x75100001,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWA801NV1,tl-wa801nd-v1,TL-WA901ND,ttyS0,115200,0x08010001,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWA830RV1,tl-wa830re-v1,TL-WA901ND,ttyS0,115200,0x08300010,1,4M))
@@ -1021,7 +1130,8 @@ $(eval $(call SingleProfile,TPLINK,64kraw,TLWR941NV3,tl-wr941nd-v3,TL-WR941ND,tt
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWR941NV4,tl-wr941nd-v4,TL-WR741ND,ttyS0,115200,0x09410004,1,4M))
 $(eval $(call SingleProfile,TPLINK,64kraw,TLWR1043V1,tl-wr1043nd-v1,TL-WR1043ND,ttyS0,115200,0x10430001,1,8M))
 
-$(eval $(call SingleProfile,TPLINK-LZMA,64kraw,ARCHERC7,archer-c7-v1,ARCHER-C7,ttyS0,115200,0x75000001,1,8Mlzma))
+$(eval $(call SingleProfile,TPLINK-LZMA,64kraw,ARCHERC7V1,archer-c7-v1,ARCHER-C7,ttyS0,115200,0x75000001,1,8Mlzma))
+$(eval $(call SingleProfile,TPLINK-LZMA,64kraw,ARCHERC7V2,archer-c7-v2,ARCHER-C7,ttyS0,115200,0xc7000002,1,16Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR10U,tl-mr10u-v1,TL-MR10U,ttyATH0,115200,0x00100101,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR11UV1,tl-mr11u-v1,TL-MR11U,ttyATH0,115200,0x00110101,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR11UV2,tl-mr11u-v2,TL-MR11U,ttyATH0,115200,0x00110102,1,4Mlzma))
@@ -1094,6 +1204,7 @@ $(eval $(call SingleProfile,ZyXEL,64k,NBG_460N_550N_550NH,nbg460n_550n_550nh,NBG
 
 $(eval $(call MultiProfile,AP121,AP121_2M AP121_4M))
 $(eval $(call MultiProfile,AP136,AP136_010 AP136_020))
+$(eval $(call MultiProfile,ARCHERC7, ARCHERC7V1 ARCHERC7V2))
 $(eval $(call MultiProfile,EWDORIN, EWDORINAP EWDORINRT EWDORIN16M))
 $(eval $(call MultiProfile,OPENMESH,OM2P MR600))
 $(eval $(call MultiProfile,TEW652BRP,TEW652BRP_FW TEW652BRP_RECOVERY))
@@ -1101,6 +1212,7 @@ $(eval $(call MultiProfile,TLMR11U,TLMR11UV1 TLMR11UV2))
 $(eval $(call MultiProfile,TLMR3040,TLMR3040V1 TLMR3040V2))
 $(eval $(call MultiProfile,TLMR3220,TLMR3220V1 TLMR3220V2))
 $(eval $(call MultiProfile,TLMR3420,TLMR3420V1 TLMR3420V2))
+$(eval $(call MultiProfile,TLWA730RE,TLWA730REV1))
 $(eval $(call MultiProfile,TLWA801,TLWA801NV1 TLWA801NV2))
 $(eval $(call MultiProfile,TLWA830,TLWA830RV1))
 $(eval $(call MultiProfile,TLWA901,TLWA901NV1 TLWA901NV2 TLWA901NV3))
@@ -1125,7 +1237,12 @@ $(eval $(call MultiProfile,Madwifi,EAP7660D UBNTRS UBNTRSPRO UBNTLSSR71 WP543))
 endif # ifeq ($(SUBTARGET),generic)
 
 ifeq ($(SUBTARGET),nand)
-$(eval $(call SingleProfile,NetgearNAND,64k,WNDR4300,wndr4300,WNDR4300,ttyS0,115200,$$(wndr4300_mtdlayout),0x33373033,WNDR4300,"",-H 29763948+0+128+128+2x2+3x3))
+$(eval $(call SingleProfile,NetgearNAND,64k,WNDR3700V4,wndr3700v4,WNDR4300,ttyS0,115200,$$(wndr4300_mtdlayout),0x33373033,WNDR3700V4,"",-H 29763948+128+128,wndr4300))
+$(eval $(call SingleProfile,NetgearNAND,64k,WNDR4300V1,wndr4300,WNDR4300,ttyS0,115200,$$(wndr4300_mtdlayout),0x33373033,WNDR4300,"",-H 29763948+0+128+128+2x2+3x3,wndr4300))
+
+$(eval $(call SingleProfile,ZyXELNAND,128k,NBG6716,nbg6716,NBG6716,ttyS0,115200,NBG6716,$$(zyx_nbg6716_mtdlayout),ubi.mtd=ubiroot mem=256M))
+
+$(eval $(call MultiProfile,WNDR4300,WNDR3700V4 WNDR4300V1))
 endif # ifeq ($(SUBTARGET),nand)
 
 
@@ -1160,6 +1277,7 @@ endif
 	$(call Image/Build/Profile/$(if $(CONFIG_IB),Default,$(IMAGE_PROFILE)),loader)
 endef
 
+# $(1): filesystem type.
 define Image/Build
 	$(call Image/Build/$(call rootfs_type,$(1)),$(1))
 	$(call Image/Build/Profile/$(IMAGE_PROFILE),$(1))
