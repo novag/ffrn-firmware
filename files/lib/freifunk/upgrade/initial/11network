@@ -20,7 +20,7 @@ set network.wan.auto='1'
 set network.management='interface'
 set network.management.ifname='br-wan'
 set network.management.proto='static'
-set network.management.ipaddr='192.168.1.1'
+set network.management.ipaddr='10.142.255.1'
 set network.management.netmask='255.255.255.0'
 
 set network.freifunk='interface'
