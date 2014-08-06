@@ -23,7 +23,7 @@ set wireless.wifi_mesh='wifi-iface'
 set wireless.wifi_mesh.device='radio0'
 set wireless.wifi_mesh.network='mesh0'
 set wireless.wifi_mesh.mode='adhoc'
-set wireless.wifi_mesh.ssid='mesh'
+set wireless.wifi_mesh.ssid='ffrn-mesh'
 set wireless.wifi_mesh.bssid='02:BA:00:00:00:01'
 commit wireless
 EOF
@@ -42,19 +42,19 @@ set wireless.wifi_freifunk5.network='freifunk'
 set wireless.wifi_freifunk5.mode='ap'
 set wireless.wifi_freifunk5.ssid='freifunk-rhein-neckar.de'
 
-#set wireless.wifi_freifunk5a='wifi-iface'
-#set wireless.wifi_freifunk5a.device='radio1'
-#set wireless.wifi_freifunk5a.network='freifunk'
-#set wireless.wifi_freifunk5a.mode='ap'
-#set wireless.wifi_freifunk5a.ssid='kbu.freifunk.net (5GHz)'
+set wireless.wifi_freifunk5a='wifi-iface'
+set wireless.wifi_freifunk5a.device='radio1'
+set wireless.wifi_freifunk5a.network='freifunk'
+set wireless.wifi_freifunk5a.mode='ap'
+set wireless.wifi_freifunk5a.ssid='freifunk-rhein-neckar.de (5GHz)'
 
 set wireless.wifi_mesh5='wifi-iface'
 set wireless.wifi_mesh5.device='radio1'
 set wireless.wifi_mesh5.network='mesh5'
 set wireless.wifi_mesh5.mode='adhoc'
-set wireless.wifi_mesh5.ssid='mesh'
+set wireless.wifi_mesh5.ssid='ffrn-mesh'
 set wireless.wifi_mesh5.bssid='02:BA:00:00:00:02'
-#set batman-adv.bat0.interfaces='mesh-vpn mesh mesh5'
+set batman-adv.bat0.interfaces='mesh-vpn mesh mesh5'
 commit
 EOF
 fi
