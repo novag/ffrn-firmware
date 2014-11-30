@@ -3,6 +3,10 @@
 
 uci set wireless.radio0.channel='6'
 
+# set mash wifi multicast rate
+uci set wireless.wifi_mesh.mcast_rate='12000'
+uci set wireless.wifi_mesh5.mcast_rate='12000'
+
 uci commit wireless
 
 /etc/init.d/network restart

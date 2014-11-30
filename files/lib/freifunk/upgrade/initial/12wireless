@@ -24,6 +24,7 @@ set wireless.wifi_mesh.network='mesh0'
 set wireless.wifi_mesh.mode='adhoc'
 set wireless.wifi_mesh.ssid='mesh'
 set wireless.wifi_mesh.bssid='02:BA:00:00:00:01'
+set wireless.wifi_mesh.mcast_rate='12000'
 commit wireless
 EOF
 
@@ -53,7 +54,8 @@ set wireless.wifi_mesh5.network='mesh5'
 set wireless.wifi_mesh5.mode='adhoc'
 set wireless.wifi_mesh5.ssid='mesh'
 set wireless.wifi_mesh5.bssid='02:BA:00:00:00:02'
-#set batman-adv.bat0.interfaces='mesh-vpn mesh mesh5'
+set wireless.wifi_mesh5.mcast_rate='12000'
+#set batman-adv.bat0.interfaces='mesh-vpn mesh0 mesh5'
 commit
 EOF
 fi
