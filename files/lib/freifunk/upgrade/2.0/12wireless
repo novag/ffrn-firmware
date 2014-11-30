@@ -1,0 +1,8 @@
+#!/bin/sh
+. /lib/freifunk/lib_node.sh
+
+uci set wireless.radio0.channel='6'
+
+uci commit wireless
+
+/etc/init.d/network restart
