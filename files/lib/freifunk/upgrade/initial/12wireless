@@ -27,7 +27,7 @@ set wireless.wifi_mesh.mcast_rate='12000'
 EOF
 
 if is_dual_wifi; then
-uci -q batch <<EOF
+    uci -q batch <<EOF
 delete wireless.radio1.disabled
 delete wireless.@wifi-iface[0]
 set wireless.radio1.channel='44'

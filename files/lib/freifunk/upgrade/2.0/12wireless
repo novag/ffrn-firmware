@@ -5,7 +5,10 @@ uci set wireless.radio0.channel='6'
 
 # set mesh wifi multicast rate
 uci set wireless.wifi_mesh.mcast_rate='12000'
-uci set wireless.wifi_mesh5.mcast_rate='12000'
+
+if is_dual_wifi; then
+    uci set wireless.wifi_mesh5.mcast_rate='12000'
+fi
 
 uci commit wireless
 

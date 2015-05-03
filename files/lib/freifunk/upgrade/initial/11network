@@ -45,16 +45,20 @@ set network.mesh0.proto='batadv'
 set network.mesh0.mtu='1528'
 set network.mesh0.mesh='bat0'
 
-set network.mesh5='interface'
-set network.mesh5.proto='batadv'
-set network.mesh5.mtu='1528'
-set network.mesh5.mesh='bat0'
-
 set network.mesh_vpn='interface'
 set network.mesh_vpn.ifname='mesh-vpn'
 set network.mesh_vpn.proto='batadv'
 set network.mesh_vpn.mesh='bat0'
 EOF
+
+if is_dual_wifi; then
+    uci -q batch <<EOF
+set network.mesh5='interface'
+set network.mesh5.proto='batadv'
+set network.mesh5.mtu='1528'
+set network.mesh5.mesh='bat0'
+EOF
+fi
 
 local mainaddr=$(get_main_address)
 local oIFS="$IFS"; IFS=":"; set -- $mainaddr; IFS="$oIFS"
