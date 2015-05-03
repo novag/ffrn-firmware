@@ -1,7 +1,6 @@
 package fastd
 
 config fastd mesh_vpn
-
     option enabled 1
 
     list config '/etc/fastd/fastd.conf'

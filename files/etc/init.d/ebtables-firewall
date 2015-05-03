@@ -14,7 +14,6 @@
 # Removing a specific rule file:
 # $ ./firewall-ebtables stop /lib/freifunk/ebtables/100-mcast-chain
 
-
 START=19
 STOP=91
 RULES_DIR='/lib/freifunk/ebtables'
@@ -44,7 +43,6 @@ exec_all() {
     done
     IFS="$old_ifs"
 }
-
 
 start() {
     (
